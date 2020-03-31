@@ -1,0 +1,113 @@
+﻿* Encoding: UTF-8.
+GET
+  FILE='data.sav'.
+DATASET NAME DataSet1 WINDOW=FRONT.
+
+* Descriptives.
+
+CTABLES
+  /VLABELS VARIABLES=alterkind tagekind v_134 DISPLAY=DEFAULT
+  /TABLE v_134 [S][MEAN, STDDEV, VARIANCE, MINIMUM, MAXIMUM] 
+    + alterkind [S][MEAN, STDDEV, VARIANCE, MINIMUM, MAXIMUM] 
+    + tagekind [S][MEAN, STDDEV, VARIANCE, MINIMUM, MAXIMUM] 
+  /CRITERIA CILEVEL=95.
+
+CTABLES
+  /VLABELS VARIABLES=FFMQ FSOZU_K22 FSW ESF SWLS DISPLAY=DEFAULT
+  /TABLE FFMQ [S][MEAN, STDDEV, VARIANCE, MINIMUM, MAXIMUM] 
+    + FSOZU_K22 [S][MEAN, STDDEV, VARIANCE, MINIMUM, MAXIMUM] 
+    + FSW [S][MEAN, STDDEV, VARIANCE, MINIMUM, MAXIMUM] 
+    + ESF [S][MEAN, STDDEV, VARIANCE, MINIMUM, MAXIMUM] 
+    + SWLS [S][MEAN, STDDEV, VARIANCE, MINIMUM, MAXIMUM] 
+  /CRITERIA CILEVEL=95.
+
+CTABLES
+  /VLABELS VARIABLES=v_121 v_141 v_81 v_135 v_84 v_86 v_85 v_143 v_144 DISPLAY=DEFAULT
+  /TABLE v_84 [C][COUNT F40.0, COLPCT.COUNT PCT40.1] 
+    + v_86 [C][COUNT F40.0, COLPCT.COUNT PCT40.1] 
+    + v_85 [C][COUNT F40.0, COLPCT.COUNT PCT40.1] 
+    + v_143 [C][COUNT F40.0, COLPCT.COUNT PCT40.1]
+    + v_144 [C][COUNT F40.0, COLPCT.COUNT PCT40.1]
+    + v_121 [C][COUNT F40.0, COLPCT.COUNT PCT40.1]
+    + v_141 [C][COUNT F40.0, COLPCT.COUNT PCT40.1]   
+    + v_81 [C][COUNT F40.0, COLPCT.COUNT PCT40.1]  
+    + v_135 [C][COUNT F40.0, COLPCT.COUNT PCT40.1]  
+  /CATEGORIES VARIABLES=v_84 v_86 v_85 v_143 v_144 v_121 v_141 v_81 v_135 ORDER=A KEY=VALUE EMPTY=INCLUDE
+  /CRITERIA CILEVEL=95.
+
+
+* Correlations.
+
+CORRELATIONS 
+  /VARIABLES=FFMQ FSOZU_K22 FSW ESF SWLS alterkind v_121 v_141 v_81 v_135 tagekind v_134 v_84 v_86 v_85 v_143 v_144
+  /PRINT=TWOTAIL NOSIG 
+  /MISSING=PAIRWISE.
+
+
+* Boxplots
+
+GGRAPH 
+  /GRAPHDATASET NAME="graphdataset" VARIABLES=v_134 MISSING=LISTWISE REPORTMISSING=NO 
+  /GRAPHSPEC SOURCE=INLINE. 
+BEGIN GPL 
+  SOURCE: s=userSource(id("graphdataset")) 
+  DATA: SWLS=col(source(s), name("v_134")) 
+  DATA: id=col(source(s), name("$CASENUM"), unit.category()) 
+  GUIDE: axis(dim(2), label("v_134")) 
+  GUIDE: text.title(label("Einfacher Boxplot  von v_134")) 
+  ELEMENT: schema(position(bin.quantile.letter(1*v_134)), label(id)) 
+END GPL.
+
+GGRAPH 
+  /GRAPHDATASET NAME="graphdataset" VARIABLES=v_85 MISSING=LISTWISE REPORTMISSING=NO 
+  /GRAPHSPEC SOURCE=INLINE. 
+BEGIN GPL 
+  SOURCE: s=userSource(id("graphdataset")) 
+  DATA: SWLS=col(source(s), name("v_85")) 
+  DATA: id=col(source(s), name("$CASENUM"), unit.category()) 
+  GUIDE: axis(dim(2), label("v_85")) 
+  GUIDE: text.title(label("Einfacher Boxplot  von v_85")) 
+  ELEMENT: schema(position(bin.quantile.letter(1*v_85)), label(id)) 
+END GPL.
+
+GGRAPH 
+  /GRAPHDATASET NAME="graphdataset" VARIABLES=v_135 MISSING=LISTWISE REPORTMISSING=NO 
+  /GRAPHSPEC SOURCE=INLINE. 
+BEGIN GPL 
+  SOURCE: s=userSource(id("graphdataset")) 
+  DATA: SWLS=col(source(s), name("v_135")) 
+  DATA: id=col(source(s), name("$CASENUM"), unit.category()) 
+  GUIDE: axis(dim(2), label("v_135")) 
+  GUIDE: text.title(label("Einfacher Boxplot  von v_134")) 
+  ELEMENT: schema(position(bin.quantile.letter(1*v_135)), label(id)) 
+END GPL.
+
+
+* Test Regression Assumptions 
+
+REGRESSION 
+  /DESCRIPTIVES MEAN STDDEV CORR SIG N 
+  /MISSING LISTWISE 
+  /STATISTICS COEFF OUTS CI(95) R ANOVA COLLIN TOL ZPP 
+  /CRITERIA=PIN(.05) POUT(.10) 
+  /NOORIGIN 
+  /DEPENDENT SWLS 
+  /METHOD=ENTER FSOZU_K22 ESF
+  /PARTIALPLOT ALL 
+  /RESIDUALS DURBIN HISTOGRAM(ZRESID) NORMPROB(ZRESID) 
+  /CASEWISE PLOT(ZRESID) OUTLIERS(3) 
+  /SAVE PRED COOK LEVER SRESID SDRESID.
+
+GRAPH 
+  /SCATTERPLOT(BIVAR)=PRE_1 WITH SRE_1
+  /MISSING=LISTWISE.
+
+
+* Test Regression Assumptions: homoscedasticity
+
+UNIANOVA SWLS WITH ESF FSOZU_K22 
+  /METHOD=SSTYPE(3) 
+  /INTERCEPT=INCLUDE 
+  /PRINT MBP WHITE BP 
+  /CRITERIA=ALPHA(.05) 
+  /DESIGN=ESF FSOZU_K22.
